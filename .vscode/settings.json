@@ -1,3 +1,24 @@
 {
-    "idf.adapterTargetName": "esp32c3"
+    "idf.adapterTargetName": "esp32s3",
+    "files.associations": {
+        "esp_secure_cert_read.h": "c",
+        "core_mqtt_agent_manager.h": "c",
+        "freertos.h": "c",
+        "scheme_softap.h": "c",
+        "string.h": "c",
+        "ota_over_mqtt_demo.h": "c",
+        "core_json.h": "c",
+        "event_groups.h": "c",
+        "ethernet_init.h": "c",
+        "taskscommon.h": "c",
+        "lan.h": "c",
+        "piepser.h": "c",
+        "executor": "c",
+        "functional": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "spi_types.h": "c"
+    },
+    "C_Cpp.dimInactiveRegions": false
 }

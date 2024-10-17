@@ -145,6 +145,16 @@ For more information regarding [IAM policy creation](https://docs.aws.amazon.com
 
 8. Click **Create**.
 
+
+**-------------------------------------------------**
+**Policy Name** = AWSIoTConnectNewDevice-ludo-api-dev
+**-------------------------------------------------**
+
+**--------------------------------------------------**
+Look at the [ThingCreation.md](ThingCreation.md)
+There you can see How it works with the Ludo API
+**--------------------------------------------------**
+
 ### 3.2 Creating an IoT thing, private key, and device certificate
 
 1. Go to the [AWS IoT console](https://console.aws.amazon.com/iotv2/).

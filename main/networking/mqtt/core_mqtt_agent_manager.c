@@ -45,6 +45,7 @@
 #include <sdkconfig.h>
 #include <esp_wifi_types.h>
 #include <esp_netif_types.h>
+#include "esp_eth.h"
 
 /* Backoff algorithm library include. */
 #include "backoff_algorithm.h"
@@ -76,6 +77,11 @@
 #if CONFIG_GRI_ENABLE_OTA_DEMO
     #include "ota_over_mqtt_demo.h"
 #endif /* CONFIG_GRI_ENABLE_OTA_DEMO */
+
+//LUDO RTOS Includes
+#include "extras/ledStrip.h"
+#include "extras/NFC.h"
+#include "lan.h"
 
 /* Preprocessor definitions ***************************************************/
 
@@ -522,6 +528,7 @@ static void prvMQTTAgentTask( void * pvParameters )
         if( xMQTTStatus == MQTTSuccess )
         {
             ESP_LOGI( TAG, "MQTT Disconnect from broker." );
+            RgbLedETHConnected();
         }
         /* Error. */
         else
@@ -619,8 +626,8 @@ static MQTTStatus_t prvCoreMqttAgentConnect( bool xCleanSession )
     /* The client identifier is used to uniquely identify this MQTT client to
      * the MQTT broker. In a production device the identifier can be something
      * unique, such as a device serial number. */
-    xConnectInfo.pClientIdentifier = configCLIENT_IDENTIFIER;
-    xConnectInfo.clientIdentifierLength = ( uint16_t ) strlen( configCLIENT_IDENTIFIER );
+    xConnectInfo.pClientIdentifier = LanPrintMac();
+    xConnectInfo.clientIdentifierLength = ( uint16_t ) strlen( LanPrintMac() );
 
     /* Set MQTT keep-alive period. It is the responsibility of the application
      * to ensure that the interval between Control Packets being sent does not
@@ -727,6 +734,7 @@ static void prvCoreMqttAgentConnectionTask( void * pvParameters )
         {
             xTlsDisconnect( pxNetworkContext );
             ESP_LOGI( TAG, "TLS connection was disconnected." );
+            RgbLedETHConnected();
         }
 
         BackoffAlgorithm_InitializeParams( &xReconnectParams,
@@ -849,16 +857,35 @@ static void prvWifiEventHandler( void * pvHandlerArg,
                 break;
         }
     }
+    if( xEventBase == ETH_EVENT )
+    {
+        switch( lEventId )
+        {
+            case ETHERNET_EVENT_DISCONNECTED:
+                ESP_LOGI( TAG, "ETH disconnected." );
+
+                /* Notify networking tasks that WiFi is disconnected. */
+                xEventGroupClearBits( xNetworkEventGroup,
+                                      WIFI_CONNECTED_BIT );
+                break;
+
+            default:
+                break;
+        }
+    }
     else if( xEventBase == IP_EVENT )
     {
         switch( lEventId )
         {
             case IP_EVENT_STA_GOT_IP:
-                ESP_LOGI( TAG, "WiFi connected." );
+                ESP_LOGI( TAG, "WiFi or ETH connected." );
                 /* Notify networking tasks that WiFi is connected. */
                 xEventGroupSetBits( xNetworkEventGroup,
                                     WIFI_CONNECTED_BIT );
                 break;
+            case IP_EVENT_ETH_GOT_IP:
+                xEventGroupSetBits( xNetworkEventGroup,
+                                    WIFI_CONNECTED_BIT );
 
             default:
                 break;
@@ -887,6 +914,9 @@ static void prvCoreMqttAgentEventHandler( void * pvHandlerArg,
             break;
 
         case CORE_MQTT_AGENT_DISCONNECTED_EVENT:
+            RgbLedETHConnected();
+            DestroyNFC();
+            
             ESP_LOGI( TAG,
                       "coreMQTT-Agent disconnected." );
             /* Notify networking tasks of TLS and MQTT disconnection. */
@@ -897,6 +927,7 @@ static void prvCoreMqttAgentEventHandler( void * pvHandlerArg,
             break;
 
         case CORE_MQTT_AGENT_OTA_STARTED_EVENT:
+    	    RgbLedOTAUpdateIncomming();
             ESP_LOGI( TAG, "OTA started." );
             break;
 

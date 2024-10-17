@@ -1,9 +1,16 @@
 set(MAIN_SRCS
     "main.c"
     "networking/wifi/app_wifi.c"
+    "networking/wifi/lan.c"
     "networking/mqtt/subscription_manager.c"
     "networking/mqtt/core_mqtt_agent_manager.c"
     "networking/mqtt/core_mqtt_agent_manager_events.c"
+    "extras/ledStrip.c"
+    "extras/NFC.c"
+    "extras/Piepser.c"
+    "extras/sntpTime.c"
+    "extras/Json.c"
+    "extras/app_state.c"
 )
 
 # Demo enables
@@ -56,6 +63,9 @@ set(MAIN_REQUIRES
     FreeRTOS-Libraries-Integration-Tests
     unity
     driver
+    esp_eth
+    ethernet_init
+    led_strip
 )
 
 idf_component_register(

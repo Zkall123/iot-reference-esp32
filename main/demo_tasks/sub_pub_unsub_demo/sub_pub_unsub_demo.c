@@ -78,6 +78,17 @@
 /* Demo task configurations include. */
 #include "sub_pub_unsub_demo_config.h"
 
+//LUDO Includes
+#include "extras/NFC.h"
+#include "extras/ledStrip.h"
+#include "extras/sntpTime.h"
+#include "extras/TasksCommon.h"
+#include "lan.h"
+
+//Json Stuff
+#include "core_json.h"
+#include "extras/Json.h"
+
 /* Preprocessor definitions ***************************************************/
 
 /* coreMQTT-Agent event group bit definitions */
@@ -139,9 +150,9 @@ extern MQTTAgentContext_t xGlobalMqttAgentContext;
  * by adding the task names.
  *
  * @note The topic strings must persist until unsubscribed.
- */
+ 
 static char topicBuf[ subpubunsubconfigNUM_TASKS_TO_CREATE ][ subpubunsubconfigSTRING_BUFFER_LENGTH ];
-
+*/
 /**
  * @brief The event group used to manage coreMQTT-Agent events.
  */
@@ -269,9 +280,9 @@ static void prvUnsubscribeToTopic( MQTTQoS_t xQoS,
 
 /**
  * @brief The function that implements the task demonstrated by this file.
- */
+ 
 static void prvSubscribePublishUnsubscribeTask( void * pvParameters );
-
+*/
 /* Static function definitions ************************************************/
 
 static void prvCoreMqttAgentEventHandler( void * pvHandlerArg,
@@ -290,6 +301,7 @@ static void prvCoreMqttAgentEventHandler( void * pvHandlerArg,
                       "coreMQTT-Agent connected." );
             xEventGroupSetBits( xNetworkEventGroup,
                                 CORE_MQTT_AGENT_CONNECTED_BIT );
+            sntpTimeTaskStart();
             break;
 
         case CORE_MQTT_AGENT_DISCONNECTED_EVENT:
@@ -499,12 +511,12 @@ static void prvPublishToTopic( MQTTQoS_t xQoS,
                              pdTRUE,
                              portMAX_DELAY );
 
-        ESP_LOGI( TAG,
+        /*ESP_LOGI( TAG,
                   "Task \"%s\" sending publish request to coreMQTT-Agent with message \"%s\" on topic \"%s\" with ID %" PRIu32 ".",
                   pcTaskGetName( NULL ),
                   pcPayload,
                   pcTopicName,
-                  ulPublishMessageId );
+                  ulPublishMessageId );*/
 
         xCommandAdded = MQTTAgent_Publish( &xGlobalMqttAgentContext,
                                            &xPublishInfo,
@@ -514,10 +526,10 @@ static void prvPublishToTopic( MQTTQoS_t xQoS,
         {
             /* For QoS 1 and 2, wait for the publish acknowledgment.  For QoS0,
              * wait for the publish to be sent. */
-            ESP_LOGI( TAG,
+            /*ESP_LOGI( TAG,
                       "Task \"%s\" waiting for publish %" PRIu32 " to complete.",
                       pcTaskGetName( NULL ),
-                      ulPublishMessageId );
+                      ulPublishMessageId );*/
 
             xReceivedEvent = prvWaitForEvent( xMqttEventGroup,
                                               MQTT_PUBLISH_COMMAND_COMPLETED_BIT );
@@ -540,10 +552,10 @@ static void prvPublishToTopic( MQTTQoS_t xQoS,
         }
         else
         {
-            ESP_LOGI( TAG,
+            /*ESP_LOGI( TAG,
                       "Publish %" PRIu32 " succeeded for task \"%s\".",
                       ulPublishMessageId,
-                      pcTaskGetName( NULL ) );
+                      pcTaskGetName( NULL ) );*/
         }
     } while( ( xReceivedEvent & MQTT_PUBLISH_COMMAND_COMPLETED_BIT ) == 0 ||
              ( xCommandContext.xReturnStatus != MQTTSuccess ) );
@@ -611,11 +623,11 @@ static void prvSubscribeToTopic( IncomingPublishCallbackContext_t * pxIncomingPu
                              pdTRUE,
                              portMAX_DELAY );
 
-        ESP_LOGI( TAG,
+        /*ESP_LOGI( TAG,
                   "Task \"%s\" sending subscribe request to coreMQTT-Agent for topic filter: %s with id %" PRIu32 "",
                   pcTaskGetName( NULL ),
                   pcTopicFilter,
-                  ulSubscribeMessageId );
+                  ulSubscribeMessageId );*/
 
         xCommandAdded = MQTTAgent_Subscribe( &xGlobalMqttAgentContext,
                                              &xSubscribeArgs,
@@ -646,11 +658,11 @@ static void prvSubscribeToTopic( IncomingPublishCallbackContext_t * pxIncomingPu
         }
         else
         {
-            ESP_LOGI( TAG,
+            /*ESP_LOGI( TAG,
                       "Subscribe %" PRIu32 " for topic filter %s succeeded for task \"%s\".",
                       ulSubscribeMessageId,
                       pcTopicFilter,
-                      pcTaskGetName( NULL ) );
+                      pcTaskGetName( NULL ) );*/
         }
     } while( ( ( xReceivedEvent & MQTT_SUBSCRIBE_COMMAND_COMPLETED_BIT ) == 0 ) ||
              ( xCommandContext.xReturnStatus != MQTTSuccess ) );
@@ -715,11 +727,11 @@ static void prvUnsubscribeToTopic( MQTTQoS_t xQoS,
                              pdFALSE,
                              pdTRUE,
                              portMAX_DELAY );
-        ESP_LOGI( TAG,
+        /*ESP_LOGI( TAG,
                   "Task \"%s\" sending unsubscribe request to coreMQTT-Agent for topic filter: %s with id %" PRIu32 "",
                   pcTaskGetName( NULL ),
                   pcTopicFilter,
-                  ulUnsubscribeMessageId );
+                  ulUnsubscribeMessageId );*/
 
         xCommandAdded = MQTTAgent_Unsubscribe( &xGlobalMqttAgentContext,
                                                &xUnsubscribeArgs,
@@ -750,87 +762,242 @@ static void prvUnsubscribeToTopic( MQTTQoS_t xQoS,
         }
         else
         {
-            ESP_LOGI( TAG,
+            /*ESP_LOGI( TAG,
                       "Unsubscribe %" PRIu32 " for topic filter %s succeeded for task \"%s\".",
                       ulUnsubscribeMessageId,
                       pcTopicFilter,
-                      pcTaskGetName( NULL ) );
+                      pcTaskGetName( NULL ) );*/
         }
     } while( ( ( xReceivedEvent & MQTT_UNSUBSCRIBE_COMMAND_COMPLETED_BIT ) == 0 ) ||
              ( xCommandContext.xReturnStatus != MQTTSuccess ) );
 }
 
-static void prvSubscribePublishUnsubscribeTask( void * pvParameters )
+static void prvLudoPublishToTopic( MQTTQoS_t xQoS,
+                               char * pcTopicName,
+                               char * pcPayload,
+                               EventGroupHandle_t xMqttEventGroup )
 {
-    struct DemoParams * pxParams = ( struct DemoParams * ) pvParameters;
-    uint32_t ulTaskNumber = pxParams->ulTaskNumber;
+    uint32_t ulPublishMessageId = 0;
 
+    MQTTStatus_t xCommandAdded;
+
+    MQTTPublishInfo_t xPublishInfo = { 0 };
+
+    MQTTAgentCommandContext_t xCommandContext = { 0 };
+    MQTTAgentCommandInfo_t xCommandParams = { 0 };
+
+    // Unique Message ID
+    xSemaphoreTake( xMessageIdSemaphore, portMAX_DELAY );
+    {
+        ++ulMessageId;
+        ulPublishMessageId = ulMessageId;
+    }
+    xSemaphoreGive( xMessageIdSemaphore );
+
+    // Set up the publish parameters
+    xPublishInfo.qos = xQoS;
+    xPublishInfo.pTopicName = pcTopicName;
+    xPublishInfo.topicNameLength = ( uint16_t ) strlen( pcTopicName );
+    xPublishInfo.pPayload = pcPayload;
+    xPublishInfo.payloadLength = ( uint16_t ) strlen( pcPayload );
+
+    // Set up the command context and command info
+    xCommandContext.xMqttEventGroup = xMqttEventGroup;
+
+    xCommandParams.blockTimeMs = subpubunsubconfigMAX_COMMAND_SEND_BLOCK_TIME_MS;
+    xCommandParams.cmdCompleteCallback = prvPublishCommandCallback;
+    xCommandParams.pCmdCompleteCallbackContext = &xCommandContext;
+
+    // Wait for coreMQTT-Agent to have network connection and be ready
+    xEventGroupWaitBits( xNetworkEventGroup,
+                         CORE_MQTT_AGENT_CONNECTED_BIT | CORE_MQTT_AGENT_OTA_NOT_IN_PROGRESS_BIT,
+                         pdFALSE,
+                         pdTRUE,
+                         portMAX_DELAY );
+    
+    if ((xEventGroupGetBits(xNetworkEventGroup) & CORE_MQTT_AGENT_CONNECTED_BIT) == 0) {
+        ESP_LOGE(TAG, "MQTT connection not established, cannot publish");
+        return;
+    }
+
+    // Send the publish command to the coreMQTT-Agent
+    xCommandAdded = MQTTAgent_Publish( &xGlobalMqttAgentContext,
+                                       &xPublishInfo,
+                                       &xCommandParams );
+
+    if( xCommandAdded != MQTTSuccess )
+    {
+        ESP_LOGE( TAG,
+                  "Failed to enqueue publish command. Error code=%s",
+                  MQTT_Status_strerror( xCommandAdded ) );
+    }
+    else
+    {
+        ESP_LOGI( TAG,
+                  "Task \"%s\" sent publish request with message \"%s\" on topic \"%s\" with ID %" PRIu32 ".",
+                  pcTaskGetName( NULL ),
+                  pcPayload,
+                  pcTopicName,
+                  ulPublishMessageId );
+    }
+}
+
+//integer to set the payload Size
+const int LudoPayloadSize = 1500;
+//and for TopicSize
+const int LudoTopicSize = 200;
+
+static void ludoPublishToTopic(char* pcTopic, char pcPayload[LudoPayloadSize])
+{
     EventGroupHandle_t xMqttEventGroup;
     IncomingPublishCallbackContext_t xIncomingPublishCallbackContext;
 
     MQTTQoS_t xQoS;
-    char * pcTopicBuffer = topicBuf[ ulTaskNumber ];
-    char pcPayload[ subpubunsubconfigSTRING_BUFFER_LENGTH ];
 
     xMqttEventGroup = xEventGroupCreate();
     xIncomingPublishCallbackContext.xMqttEventGroup = xMqttEventGroup;
 
     xQoS = ( MQTTQoS_t ) subpubunsubconfigQOS_LEVEL;
 
-    /* Create a topic name for this task to publish to. */
-    snprintf( pcTopicBuffer,
-              subpubunsubconfigSTRING_BUFFER_LENGTH,
-              "/filter/%s",
-              pcTaskGetName( NULL ) );
+    //prvSubscribeToTopic(&xIncomingPublishCallbackContext, xQoS, pcTopic,xMqttEventGroup);
 
+    prvPublishToTopic(xQoS, pcTopic, pcPayload, xMqttEventGroup);
+
+    //prvWaitForEvent( xMqttEventGroup, MQTT_INCOMING_PUBLISH_RECEIVED_BIT );
+
+    //ESP_LOGI( TAG, "Task \"%s\" received: %s", pcTaskGetName( NULL ), xIncomingPublishCallbackContext.pcIncomingPublish );
+
+    //prvUnsubscribeToTopic( xQoS, pcTopic, xMqttEventGroup );
+
+    vEventGroupDelete( xMqttEventGroup );
+
+}
+
+void prvSendUIDToAWS(char *UID)
+{
+
+    //ESP_LOGI(TAG, "Subscribing Access channel!");
+    EventGroupHandle_t AccessMqttEventGroup;
+    IncomingPublishCallbackContext_t AccessIncomingPublishCallbackContext;
+
+    MQTTQoS_t xQoS;
+
+    AccessMqttEventGroup = xEventGroupCreate();
+    AccessIncomingPublishCallbackContext.xMqttEventGroup = AccessMqttEventGroup;
+
+    xQoS = ( MQTTQoS_t ) subpubunsubconfigQOS_LEVEL;
+
+    //Set the Topic to '/ThingName/Access/sub'
+    char SetTopic[LudoTopicSize];
+    snprintf(SetTopic ,LudoTopicSize, "device/access/%s/response", LanPrintMac());
+    
+    //Subscribing to channel!
+    prvSubscribeToTopic(&AccessIncomingPublishCallbackContext, xQoS, SetTopic ,AccessMqttEventGroup);
+
+    //ESP_LOGI(TAG, "UID: %s", UID);
+     // Speicher für Payload dynamisch allokieren
+    char *pcPayload = (char *) malloc(LudoPayloadSize * sizeof(char));
+    if (pcPayload == NULL)
+    {
+        // Fehlerbehandlung für fehlgeschlagene Speicherzuweisung
+        ESP_LOGE(TAG, "Failed to allocate memory for Payload");
+        return;
+    }
+    char* JsonString = JsonAccessString(UID);
+    snprintf( pcPayload, LudoPayloadSize, "%s", JsonString);
+
+    //Set the Topic to '/ThingName/Access/pub'
+    char pcTopic[LudoTopicSize];
+    snprintf(pcTopic, LudoTopicSize, "device/access/%s/request", LanPrintMac());
+
+    ludoPublishToTopic(pcTopic, pcPayload);
+
+    prvWaitForEvent( AccessMqttEventGroup, MQTT_INCOMING_PUBLISH_RECEIVED_BIT );
+    ESP_LOGW(TAG, "Access received: %s", AccessIncomingPublishCallbackContext.pcIncomingPublish );
+    JsonParse(AccessIncomingPublishCallbackContext.pcIncomingPublish, "access");
+    
+    
+    //Unsubscribe and delete Task!
+    prvUnsubscribeToTopic(xQoS, SetTopic, AccessMqttEventGroup);
+    vEventGroupDelete( AccessMqttEventGroup );
+
+    //ESP_LOGI( TAG, "Task \"%s\" Sends UID to AWS. Waiting for next tag!.", pcTaskGetName( NULL ) );
+
+    free(pcPayload);
+}
+
+static void ludoSettingsTask( void * pvParameters )
+{
+    ESP_LOGI(TAG, "Subscribing Setting channel!");
+    EventGroupHandle_t SettingsMqttEventGroup;
+    IncomingPublishCallbackContext_t SettingsIncomingPublishCallbackContext;
+
+    MQTTQoS_t xQoS;
+
+    SettingsMqttEventGroup = xEventGroupCreate();
+    SettingsIncomingPublishCallbackContext.xMqttEventGroup = SettingsMqttEventGroup;
+
+
+    xQoS = ( MQTTQoS_t ) subpubunsubconfigQOS_LEVEL;
+    //Set the Topic to '/ThingName/Settings/pub'
+    xEventGroupWaitBits( xNetworkEventGroup,
+                             CORE_MQTT_AGENT_CONNECTED_BIT ,
+                             pdFALSE,
+                             pdTRUE,
+                             portMAX_DELAY );
+    char SetTopic[LudoTopicSize];
+    snprintf(SetTopic ,LudoTopicSize, "device/settings/%s/response", LanPrintMac());
+    
+    //Subscribing to channel!
+    prvSubscribeToTopic(&SettingsIncomingPublishCallbackContext, xQoS, SetTopic ,SettingsMqttEventGroup);
+
+    char *Payload = (char *) malloc(LudoPayloadSize * sizeof(char));
+    if (Payload == NULL) {
+        // Fehlerbehandlung für fehlgeschlagene Speicherzuweisung
+        ESP_LOGE(TAG, "Failed to allocate memory for Payload");
+        return;
+    }
+    snprintf(Payload, LudoPayloadSize, "{\"macAddrHex\":\"%s\"}", LanPrintMac());
+
+    // Null-Terminierung sicherstellen
+    Payload[LudoPayloadSize - 1] = '\0';
+
+    //Set the Topic to '/ThingName/Settings/pub'
+    char pcTopic[LudoTopicSize];
+    snprintf(pcTopic,LudoTopicSize, "device/settings/%s/request", LanPrintMac());
+
+
+    //Frage nach den settings!
+    ludoPublishToTopic(pcTopic, Payload);
+
+    free(Payload);
     while( 1 )
     {
-        /* Subscribe to the same topic to which this task will publish.  That will
-         * result in each published message being published from the server back to
-         * the target. */
-        prvSubscribeToTopic( &xIncomingPublishCallbackContext,
-                             xQoS,
-                             pcTopicBuffer,
-                             xMqttEventGroup );
+        prvWaitForEvent( SettingsMqttEventGroup, MQTT_INCOMING_PUBLISH_RECEIVED_BIT );
+        ESP_LOGI(TAG, "Settings received: %s", SettingsIncomingPublishCallbackContext.pcIncomingPublish );
 
-        snprintf( pcPayload,
-                  subpubunsubconfigSTRING_BUFFER_LENGTH,
-                  "%s",
-                  pcTaskGetName( NULL ) );
-
-        prvPublishToTopic( xQoS,
-                           pcTopicBuffer,
-                           pcPayload,
-                           xMqttEventGroup );
-
-        prvWaitForEvent( xMqttEventGroup, MQTT_INCOMING_PUBLISH_RECEIVED_BIT );
-
-        ESP_LOGI( TAG,
-                  "Task \"%s\" received: %s",
-                  pcTaskGetName( NULL ),
-                  xIncomingPublishCallbackContext.pcIncomingPublish );
-
-        prvUnsubscribeToTopic( xQoS, pcTopicBuffer, xMqttEventGroup );
-
-        ESP_LOGI( TAG,
-                  "Task \"%s\" completed a loop. Delaying before next loop.",
-                  pcTaskGetName( NULL ) );
+        //todo subscribe all channel and act after it
+        JsonParse(SettingsIncomingPublishCallbackContext.pcIncomingPublish, "settings");
+        //Lösche LED Task und starte NFC Scanner
+        if(!NFCStarted())
+        {
+            StartNFC();
+            RgbLedAWSConnected();
+        }
+        
 
         vTaskDelay( pdMS_TO_TICKS( subpubunsubconfigDELAY_BETWEEN_SUB_PUB_UNSUB_LOOPS_MS ) );
     }
 
-    vEventGroupDelete( xMqttEventGroup );
+    vEventGroupDelete( SettingsMqttEventGroup );
     vTaskDelete( NULL );
 }
 
 /* Public function definitions ************************************************/
 
 void vStartSubscribePublishUnsubscribeDemo( void )
-{
-    static struct DemoParams pxParams[ subpubunsubconfigNUM_TASKS_TO_CREATE ];
-    char pcTaskNameBuf[ 15 ];
-    uint32_t ulTaskNumber;
-
+{   
+    ESP_LOGI(TAG, "Starting SubscribeTask");
     xMessageIdSemaphore = xSemaphoreCreateMutex();
     xNetworkEventGroup = xEventGroupCreate();
     xCoreMqttAgentManagerRegisterHandler( prvCoreMqttAgentEventHandler );
@@ -838,29 +1005,5 @@ void vStartSubscribePublishUnsubscribeDemo( void )
     /* Initialize the coreMQTT-Agent event group. */
     xEventGroupSetBits( xNetworkEventGroup,
                         CORE_MQTT_AGENT_OTA_NOT_IN_PROGRESS_BIT );
-
-    /* Each instance of prvSubscribePublishUnsubscribeTask() generates a unique
-     * name and topic filter for itself from the number passed in as the task
-     * parameter. */
-    /* Create a few instances of prvSubscribePublishUnsubscribeTask(). */
-    for( ulTaskNumber = 0; ulTaskNumber < subpubunsubconfigNUM_TASKS_TO_CREATE; ulTaskNumber++ )
-    {
-        memset( pcTaskNameBuf,
-                0x00,
-                sizeof( pcTaskNameBuf ) );
-
-        snprintf( pcTaskNameBuf,
-                  10,
-                  "SubPub%d",
-                  ( int ) ulTaskNumber );
-
-        pxParams[ ulTaskNumber ].ulTaskNumber = ulTaskNumber;
-
-        xTaskCreate( prvSubscribePublishUnsubscribeTask,
-                     pcTaskNameBuf,
-                     subpubunsubconfigTASK_STACK_SIZE,
-                     ( void * ) &pxParams[ ulTaskNumber ],
-                     subpubunsubconfigTASK_PRIORITY,
-                     NULL );
-    }
+    xTaskCreate(ludoSettingsTask, "ludoSettingsTask", SettingsTaskStackSize ,NULL, SettingsTaskPriority,NULL);
 }

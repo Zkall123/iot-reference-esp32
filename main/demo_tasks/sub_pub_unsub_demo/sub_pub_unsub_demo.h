@@ -38,6 +38,8 @@
  */
 void vStartSubscribePublishUnsubscribeDemo( void );
 
+void prvSendUIDToAWS(char *UID);
+
 /* *INDENT-OFF* */
     #ifdef __cplusplus
         } /* extern "C" */

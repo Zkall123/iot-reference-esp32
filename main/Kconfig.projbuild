@@ -1,3 +1,17 @@
+menu "LED Ring Configuration"
+    # NUM LEDs
+    config LED_STRIP_LEN
+        int "Number of LED pixel"
+        default 16
+    # LED Pin
+    config LED_STRIP_GPIO
+        int "GPIO pin number connected to DI"
+        default 4
+        help
+            Choose GPIO number connected to DI (DIN on some products).
+
+endmenu
+
 menu "Featured FreeRTOS IoT Integration"
     config APP_WIFI_PROV_SHOW_QR
         bool "Show provisioning QR code"
@@ -108,7 +122,7 @@ menu "Featured FreeRTOS IoT Integration"
 
             config GRI_SUB_PUB_UNSUB_DEMO_MAX_COMMAND_SEND_BLOCK_TIME_MS
                 int "coreMQTT-Agent command post block time in milliseconds."
-                default 500
+                default 100
                 help
                     The maximum amount of time in milliseconds to wait for the commands to be posted to the MQTT agent should the MQTT agent's command queue be full. Tasks wait in the Blocked state, so don't use any CPU time.
 
@@ -160,7 +174,7 @@ menu "Featured FreeRTOS IoT Integration"
 
             config GRI_OTA_DEMO_MQTT_TIMEOUT_MS
                 int "MQTT operation timeout milliseconds."
-                default 5000
+                default 500
                 help
                     The maximum time for which OTA demo waits for an MQTT operation to be complete. This involves receiving an acknowledgment for broker for SUBSCRIBE, UNSUBSCRIBE and non QOS0 publishes.
 
@@ -226,11 +240,11 @@ menu "Featured FreeRTOS IoT Integration"
 
         config GRI_RETRY_MAX_BACKOFF_DELAY_MS
             int "Maximum backoff delay on connection retry in milliseconds"
-            default 5000
+            default 500
 
         config GRI_RETRY_BACKOFF_BASE_MS
             int "Base back-off delay on connection retry in milliseconds"
-            default 500
+            default 100
 
         config GRI_MQTT_AGENT_NETWORK_BUFFER_SIZE
             int "coreMQTT-Agent network buffer size"
@@ -238,11 +252,11 @@ menu "Featured FreeRTOS IoT Integration"
 
         config GRI_MQTT_AGENT_COMMAND_QUEUE_LENGTH
             int "coreMQTT-Agent command queue length"
-            default 10
+            default 50
 
         config GRI_MQTT_AGENT_KEEP_ALIVE_INTERVAL_SECONDS
             int "coreMQTT-Agent keep alive interval in seconds"
-            default 60
+            default 10
             help
                 The maximum time interval in seconds which is allowed to elapsed between two Control Packets.
 
@@ -345,7 +359,7 @@ menu "Featured FreeRTOS IoT Integration"
 
         config GRI_TEMPERATURE_PUB_SUB_AND_LED_CONTROL_DEMO_DELAY_BETWEEN_PUBLISH_OPERATIONS_MS
             int "Delay between publishes in milliseconds"
-            default 3000
+            default 500
             help
                 Delay for the synchronous publisher task between publishes.
 

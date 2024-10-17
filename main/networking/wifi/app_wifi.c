@@ -35,6 +35,10 @@
 #include <nvs.h>
 #include <nvs_flash.h>
 #include "app_wifi.h"
+#include "lan.h"
+
+//Include LED Strip to change color
+#include "extras/ledStrip.h"
 
 static const char * TAG = "app_wifi";
 static const int WIFI_CONNECTED_EVENT = BIT0;
@@ -76,8 +80,15 @@ static void event_handler( void * arg,
                            long int event_id,
                            void * event_data )
 {
+
+    
+
     if( event_base == WIFI_PROV_EVENT )
     {
+        //if(!bIsConnected())
+        //{
+        //   RgbLedWifiPriovisingStarted(); 
+        //}
         switch( event_id )
         {
             case WIFI_PROV_START:
@@ -114,25 +125,48 @@ static void event_handler( void * arg,
                 break;
 
             default:
+                //if(bIsConnected())
+                //{
+                //    ESP_LOGI(TAG, "End Privisioning because ETH is Connected!");
+                //    RgbLedETHConnected();
+                //}
                 break;
         }
     }
-    else if( ( event_base == WIFI_EVENT ) && ( event_id == WIFI_EVENT_STA_START ) )
+    else if( ( event_base == WIFI_EVENT ) && ( event_id == WIFI_EVENT_STA_START ))
     {
-        esp_wifi_connect();
+        //if(!bIsConnected())
+        //{
+            RgbLedETHAppStarted();
+            esp_wifi_connect();
+        //}
+        
     }
     else if( ( event_base == IP_EVENT ) && ( event_id == IP_EVENT_STA_GOT_IP ) )
     {
+        RgbLedETHConnected();
         ip_event_got_ip_t * event = ( ip_event_got_ip_t * ) event_data;
         ESP_LOGI( TAG, "Connected with IP Address:" IPSTR, IP2STR( &event->ip_info.ip ) );
         /* Signal main application to continue execution */
         xEventGroupSetBits( wifi_event_group, WIFI_CONNECTED_EVENT );
     }
     else if( ( event_base == WIFI_EVENT ) && ( event_id == WIFI_EVENT_STA_DISCONNECTED ) )
-    {
-        ESP_LOGI( TAG, "Disconnected. Connecting to the AP again..." );
-        esp_wifi_connect();
+    {   
+        //if(!bIsConnected())
+        //{
+            RgbLedETHAppStarted();
+            ESP_LOGI( TAG, "Disconnected. Connecting to the AP again..." );
+            esp_wifi_connect();
+        //}
     }
+    //else if(  bIsConnected() )
+    //{
+    //    RgbLedETHConnected();
+    //    ip_event_got_ip_t * event = ( ip_event_got_ip_t * ) event_data;
+    //    ESP_LOGI( TAG, "Connected with IP Address:" IPSTR, IP2STR( &event->ip_info.ip ) );
+    //    /* Signal main application to continue execution */
+    //    xEventGroupSetBits( wifi_event_group, WIFI_CONNECTED_EVENT );
+    //}
 }
 
 static void wifi_init_sta()
@@ -312,6 +346,24 @@ esp_err_t app_wifi_start( app_wifi_pop_type_t pop_type )
     bool provisioned = false;
     /* Let's find out if the device is provisioned */
     ESP_ERROR_CHECK( wifi_prov_mgr_is_provisioned( &provisioned ) );
+
+    // we wait forever until i have the WLAN Code Working :D_________________________________________________________________
+
+    //little loop to Check if ETH is Connected
+    //int trys = 0;
+    //do
+    //{
+    //    ESP_LOGW(TAG, "Waiting  for ETH Connection!");
+    //    vTaskDelay(pdMS_TO_TICKS(1000));
+    //    trys++;                                           //DeComment if Wlan is Working!
+    //    if(bIsConnected())
+    //    {
+    //        provisioned = true;
+    //        break;
+    //    }
+
+        
+    //} while (trys < 10);
 
     /* If device is not yet provisioned start provisioning service */
     if( !provisioned )

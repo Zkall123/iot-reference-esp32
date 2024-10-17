@@ -91,6 +91,11 @@
 /* Demo task configurations include. */
 #include "ota_over_mqtt_demo_config.h"
 
+//Ludo Includes
+#include "extras/TasksCommon.h"
+#include "extras/ledStrip.h"
+#include "lan.h"
+
 /* Preprocessor definitions ****************************************************/
 
 /**
@@ -624,8 +629,8 @@ static void requestJobDocumentHandler( void )
      */
     xResult = Jobs_StartNext( topicBuffer,
                               TOPIC_BUFFER_SIZE,
-                              otademoconfigCLIENT_IDENTIFIER,
-                              strlen( otademoconfigCLIENT_IDENTIFIER ),
+                              LanPrintMac(),
+                              strlen( LanPrintMac() ),
                               &topicLength );
 
     if( xResult == JobsSuccess )
@@ -680,8 +685,8 @@ static void initMqttDownloader( AfrOtaJobDocumentFields_t * jobFields )
     mqttDownloader_init( &mqttFileDownloaderContext,
                          jobFields->imageRef,
                          jobFields->imageRefLen,
-                         otademoconfigCLIENT_IDENTIFIER,
-                         strlen( otademoconfigCLIENT_IDENTIFIER ),
+                         LanPrintMac(),
+                         strlen( LanPrintMac() ),
                          DATA_TYPE_JSON );
 
     prvMQTTSubscribe( mqttFileDownloaderContext.topicStreamData,
@@ -993,8 +998,8 @@ bool otaDemo_handleIncomingMQTTMessage( char * topic,
          */
         handled = Jobs_IsStartNextAccepted( topic,
                                             topicLength,
-                                            otademoconfigCLIENT_IDENTIFIER,
-                                            strlen( otademoconfigCLIENT_IDENTIFIER ) );
+                                            LanPrintMac(),
+                                            strlen( LanPrintMac() ) );
 
         if( handled )
         {
@@ -1025,8 +1030,8 @@ static bool sendSuccessMessage( void )
      */
     jobStatusResult = Jobs_Update( topicBuffer,
                                    TOPIC_BUFFER_SIZE,
-                                   otademoconfigCLIENT_IDENTIFIER,
-                                   strlen( otademoconfigCLIENT_IDENTIFIER ),
+                                   LanPrintMac(),
+                                   strlen( LanPrintMac() ),
                                    globalJobId,
                                    ( uint16_t ) strnlen( globalJobId, sizeof( globalJobId ) ),
                                    &topicBufferLength );
@@ -1160,6 +1165,7 @@ static void processOTAEvents( void )
             if( currentBlockOffset == 0 )
             {
                 ESP_LOGI( TAG, "Starting The Download.\n" );
+                RgbLedOTAUpdateIncomming();
             }
 
             if( requestDataBlock() == OtaMqttSuccess )
@@ -1260,12 +1266,12 @@ static void processOTAEvents( void )
 
         case OtaAgentEventCloseFile:
             ESP_LOGI( TAG, "Close file event Received \n" );
-
             if( closeFileHandler() == true )
             {
                 nextEvent.eventId = OtaAgentEventActivateImage;
                 OtaSendEvent_FreeRTOS( &nextEvent );
             }
+            RgbLedOTAUpdateDone();
 
             break;
 
@@ -1397,15 +1403,20 @@ static void prvOTADemoTask( void * pvParam )
             processOTAEvents();
         }
 
+        ESP_LOGE(TAG, "Dauerschleife?");
+
         while( ( state = prvGetOTAState() ) != OtaAgentStateStopped )
         {
+            ESP_LOGW(TAG, "OTA State = %d", state);
             if( ( state != OtaAgentStateSuspended ) && ( xSuspendOta == pdTRUE ) )
             {
                 prvSuspendOTACodeSigningDemo();
+                ESP_LOGE(TAG, "prvSuspendOTACodeSigningDemo");
             }
             else if( ( state == OtaAgentStateSuspended ) && ( xSuspendOta == pdFALSE ) )
             {
                 prvResumeOTACodeSigningDemo();
+                ESP_LOGE(TAG, "prvResumeOTACodeSigningDemo");
             }
 
             vTaskDelay( pdMS_TO_TICKS( otademoconfigTASK_DELAY_MS ) );
@@ -1488,9 +1499,9 @@ void vStartOTACodeSigningDemo( void )
 
     if( ( xResult = xTaskCreate( prvOTADemoTask,
                                  "OTADemoTask",
-                                 otademoconfigDEMO_TASK_STACK_SIZE,
+                                 OTATaskStackSize,
                                  NULL,
-                                 otademoconfigDEMO_TASK_PRIORITY,
+                                 OTATaskPriority,
                                  NULL ) ) != pdPASS )
     {
         ESP_LOGE( TAG, "Failed to start OTA task: errno=%d", xResult );
@@ -1549,8 +1560,8 @@ bool vOTAProcessMessage( void * pvIncomingPublishCallbackContext,
          */
         isMatch = Jobs_IsStartNextAccepted( pxPublishInfo->pTopicName,
                                             pxPublishInfo->topicNameLength,
-                                            otademoconfigCLIENT_IDENTIFIER,
-                                            strlen( otademoconfigCLIENT_IDENTIFIER ) );
+                                            LanPrintMac(),
+                                            strlen( LanPrintMac() ) );
 
         if( isMatch )
         {

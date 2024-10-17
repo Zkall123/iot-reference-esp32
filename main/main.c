@@ -54,6 +54,12 @@
 
 /* WiFi provisioning/connection handler include. */
 #include "app_wifi.h"
+#include "lan.h"
+
+//Ludo Scanner Includes
+#include "extras/ledStrip.h"
+#include "extras/NFC.h"
+#include "extras/Piepser.h"
 
 /* Demo includes. */
 #if CONFIG_GRI_ENABLE_SUB_PUB_UNSUB_DEMO
@@ -80,6 +86,8 @@ extern const char root_cert_auth_start[] asm ( "_binary_root_cert_auth_crt_start
 extern const char root_cert_auth_end[]   asm ( "_binary_root_cert_auth_crt_end" );
 
 /* Global variables ***********************************************************/
+
+bool bUseWifi = false;
 
 /**
  * @brief Logging tag for ESP-IDF logging functions.
@@ -149,7 +157,6 @@ static BaseType_t prvInitializeNetworkContext( void )
     }
 
     /* Initialize network context. */
-
     xNetworkContext.pcHostname = CONFIG_GRI_MQTT_ENDPOINT;
     xNetworkContext.xPort = CONFIG_GRI_MQTT_PORT;
 
@@ -315,11 +322,19 @@ static void prvStartEnabledDemos( void )
  */
 void app_main( void )
 {
+    InitAppState();
+
+    //At first starting The LED Ring Task!
+    StartLED();
+    
     /* This is used to store the return of initialization functions. */
     BaseType_t xRet;
 
     /* This is used to store the error return of ESP-IDF functions. */
     esp_err_t xEspErrRet;
+
+    //Befor inilizialize show it with the ring
+    RgbLedCertsLoaded();
 
     /* Initialize global network context. */
     xRet = prvInitializeNetworkContext();
@@ -355,7 +370,16 @@ void app_main( void )
      * register their coreMQTT-Agent event handlers before events happen. */
     prvStartEnabledDemos();
 
-    /* Start WiFi. */
-    app_wifi_init();
-    app_wifi_start( POP_TYPE_MAC );
+    //And then show that we are starting the Ethernet or WIFI
+    RgbLedETHAppStarted();
+    if(!bUseWifi)
+    {
+        start_ethernet();
+    }
+    else if(bUseWifi)
+    {
+        /* Start WiFi. */
+        app_wifi_init();
+        app_wifi_start( POP_TYPE_MAC );
+    }
 }

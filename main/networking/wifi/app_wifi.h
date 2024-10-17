@@ -28,6 +28,8 @@ esp_err_t app_wifi_start( app_wifi_pop_type_t pop_type );
 
 esp_err_t app_wifi_connect();
 bool app_wifi_is_connected();
+
+//All code uses this
 void vWaitOnWifiConnected( void );
 
 /* *INDENT-OFF* */
